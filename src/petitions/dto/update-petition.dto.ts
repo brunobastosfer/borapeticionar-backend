@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsEnum } from 'class-validator';
-import { PetitionStatus } from '../../../generated/prisma/client.js';
+import { PetitionStatus } from '@prisma/client';
 
 export class UpdatePetitionDto {
   @IsOptional()

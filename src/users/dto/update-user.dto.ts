@@ -5,7 +5,7 @@ import {
   IsEnum,
   MinLength,
 } from 'class-validator';
-import { Sex } from '../../../generated/prisma/client.js';
+import { Sex } from '@prisma/client';
 
 export class UpdateUserDto {
   @IsOptional()
