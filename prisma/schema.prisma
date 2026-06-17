@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum PlanType {
+  FREE
+  ESSENTIAL
+  PROFESSIONAL
+  OFFICE
+}
+
+enum PetitionStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum Role {
+  USER
+  COMPANY
+  ADMIN
+}
+
+model User {
+  id              String    @id @default(uuid())
+  firstName       String
+  lastName        String
+  cpf             String    @unique
+  oabNumber       String?
+  sex             Sex?
+  practiceArea    String?
+  institutionalEmail String @unique
+  password        String
+  role            Role      @default(USER)
+  planId          String?
+  organizationId  String?
+  linkedToId      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  plan            Plan?     @relation(fields: [planId], references: [id])
+  petitions       Petition[]
+  favorites       Favorite[]
+  refreshTokens   RefreshToken[]
+  petitionUsage   PetitionUsage[]
+  ownedOrganizations Organization[] @relation("OrganizationOwner")
+  organizationMemberships OrganizationMember[]
+  sessions        Session[]
+  linkedUsers     User[]    @relation("LinkedUsers")
+  linkedTo        User?     @relation("LinkedUsers", fields: [linkedToId], references: [id])
+
+  @@map("users")
+}
+
+model Plan {
+  id                  String   @id @default(uuid())
+  name                String
+  type                PlanType @unique
+  price               Float    @default(0)
+  monthlyLimit        Int?
+  isAvailable         Boolean  @default(true)
+  canExportPdf        Boolean  @default(false)
+  canExportWord       Boolean  @default(false)
+  practiceAreas       String[]
+  hasDashboard        Boolean  @default(false)
+  hasFullHistory      Boolean  @default(false)
+  hasExpandedLibrary  Boolean  @default(false)
+  isMultiUser         Boolean  @default(false)
+  hasTeamManagement   Boolean  @default(false)
+  hasPriority         Boolean  @default(false)
+  hasCustomTemplates  Boolean  @default(false)
+  hasRealTimePreview  Boolean  @default(false)
+  hasBasicEditor      Boolean  @default(false)
+  hasBasicExport      Boolean  @default(false)
+  features            String[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  users               User[]
+  templates           PetitionTemplate[]
+  organizations       Organization[]
+}
+
+model Petition {
+  id              String         @id @default(uuid())
+  userId          String
+  practiceArea    String?
+  font            String?
+  textColor       String?
+  fullName        String
+  cpfCnpj         String
+  rg              String?
+  maritalStatus   String?
+  cep             String?
+  street          String?
+  defendantCompany String
+  cnpj            String?
+  facts           String
+  requests        String
+  status          PetitionStatus @default(DRAFT)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favorites       Favorite[]
+
+  @@map("petitions")
+}
+
+model Favorite {
+  id          String   @id @default(uuid())
+  userId      String
+  petitionId  String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  petition    Petition @relation(fields: [petitionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, petitionId])
+  @@map("favorites")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model PetitionUsage {
+  id        String   @id @default(uuid())
+  userId    String
+  year      Int
+  month     Int
+  count     Int      @default(0)
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, month])
+  @@map("petition_usage")
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  cnpj        String?  @unique
+  ownerId     String
+  planId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  plan        Plan?    @relation(fields: [planId], references: [id])
+  members     OrganizationMember[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id              String   @id @default(uuid())
+  organizationId  String
+  userId          String
+  role            String   @default("member")
+  joinedAt        DateTime @default(now())
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+model PetitionTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  content     String
+  category    String
+  planId      String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plan        Plan?    @relation(fields: [planId], references: [id])
+
+  @@map("petition_templates")
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  userId      String
+  userAgent   String
+  ipAddress   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}

@@ -1,0 +1,174 @@
+import * as runtime from "@prisma/client/runtime/index-browser";
+export type * from '../models.js';
+export type * from './prismaNamespace.js';
+export declare const Decimal: typeof runtime.Decimal;
+export declare const NullTypes: {
+    DbNull: (new (secret: never) => typeof runtime.DbNull);
+    JsonNull: (new (secret: never) => typeof runtime.JsonNull);
+    AnyNull: (new (secret: never) => typeof runtime.AnyNull);
+};
+export declare const DbNull: import("@prisma/client-runtime-utils").DbNullClass;
+export declare const JsonNull: import("@prisma/client-runtime-utils").JsonNullClass;
+export declare const AnyNull: import("@prisma/client-runtime-utils").AnyNullClass;
+export declare const ModelName: {
+    readonly User: "User";
+    readonly Plan: "Plan";
+    readonly Petition: "Petition";
+    readonly Favorite: "Favorite";
+    readonly RefreshToken: "RefreshToken";
+    readonly PetitionUsage: "PetitionUsage";
+    readonly Organization: "Organization";
+    readonly OrganizationMember: "OrganizationMember";
+    readonly PetitionTemplate: "PetitionTemplate";
+    readonly Session: "Session";
+};
+export type ModelName = (typeof ModelName)[keyof typeof ModelName];
+export declare const TransactionIsolationLevel: {
+    readonly ReadUncommitted: "ReadUncommitted";
+    readonly ReadCommitted: "ReadCommitted";
+    readonly RepeatableRead: "RepeatableRead";
+    readonly Serializable: "Serializable";
+};
+export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel];
+export declare const UserScalarFieldEnum: {
+    readonly id: "id";
+    readonly firstName: "firstName";
+    readonly lastName: "lastName";
+    readonly cpf: "cpf";
+    readonly oabNumber: "oabNumber";
+    readonly sex: "sex";
+    readonly practiceArea: "practiceArea";
+    readonly institutionalEmail: "institutionalEmail";
+    readonly password: "password";
+    readonly role: "role";
+    readonly planId: "planId";
+    readonly organizationId: "organizationId";
+    readonly linkedToId: "linkedToId";
+    readonly createdAt: "createdAt";
+    readonly updatedAt: "updatedAt";
+};
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum];
+export declare const PlanScalarFieldEnum: {
+    readonly id: "id";
+    readonly name: "name";
+    readonly type: "type";
+    readonly price: "price";
+    readonly monthlyLimit: "monthlyLimit";
+    readonly isAvailable: "isAvailable";
+    readonly canExportPdf: "canExportPdf";
+    readonly canExportWord: "canExportWord";
+    readonly practiceAreas: "practiceAreas";
+    readonly hasDashboard: "hasDashboard";
+    readonly hasFullHistory: "hasFullHistory";
+    readonly hasExpandedLibrary: "hasExpandedLibrary";
+    readonly isMultiUser: "isMultiUser";
+    readonly hasTeamManagement: "hasTeamManagement";
+    readonly hasPriority: "hasPriority";
+    readonly hasCustomTemplates: "hasCustomTemplates";
+    readonly hasRealTimePreview: "hasRealTimePreview";
+    readonly hasBasicEditor: "hasBasicEditor";
+    readonly hasBasicExport: "hasBasicExport";
+    readonly features: "features";
+    readonly createdAt: "createdAt";
+    readonly updatedAt: "updatedAt";
+};
+export type PlanScalarFieldEnum = (typeof PlanScalarFieldEnum)[keyof typeof PlanScalarFieldEnum];
+export declare const PetitionScalarFieldEnum: {
+    readonly id: "id";
+    readonly userId: "userId";
+    readonly practiceArea: "practiceArea";
+    readonly font: "font";
+    readonly textColor: "textColor";
+    readonly fullName: "fullName";
+    readonly cpfCnpj: "cpfCnpj";
+    readonly rg: "rg";
+    readonly maritalStatus: "maritalStatus";
+    readonly cep: "cep";
+    readonly street: "street";
+    readonly defendantCompany: "defendantCompany";
+    readonly cnpj: "cnpj";
+    readonly facts: "facts";
+    readonly requests: "requests";
+    readonly status: "status";
+    readonly createdAt: "createdAt";
+    readonly updatedAt: "updatedAt";
+};
+export type PetitionScalarFieldEnum = (typeof PetitionScalarFieldEnum)[keyof typeof PetitionScalarFieldEnum];
+export declare const FavoriteScalarFieldEnum: {
+    readonly id: "id";
+    readonly userId: "userId";
+    readonly petitionId: "petitionId";
+    readonly createdAt: "createdAt";
+};
+export type FavoriteScalarFieldEnum = (typeof FavoriteScalarFieldEnum)[keyof typeof FavoriteScalarFieldEnum];
+export declare const RefreshTokenScalarFieldEnum: {
+    readonly id: "id";
+    readonly token: "token";
+    readonly userId: "userId";
+    readonly expiresAt: "expiresAt";
+    readonly createdAt: "createdAt";
+};
+export type RefreshTokenScalarFieldEnum = (typeof RefreshTokenScalarFieldEnum)[keyof typeof RefreshTokenScalarFieldEnum];
+export declare const PetitionUsageScalarFieldEnum: {
+    readonly id: "id";
+    readonly userId: "userId";
+    readonly year: "year";
+    readonly month: "month";
+    readonly count: "count";
+};
+export type PetitionUsageScalarFieldEnum = (typeof PetitionUsageScalarFieldEnum)[keyof typeof PetitionUsageScalarFieldEnum];
+export declare const OrganizationScalarFieldEnum: {
+    readonly id: "id";
+    readonly name: "name";
+    readonly cnpj: "cnpj";
+    readonly ownerId: "ownerId";
+    readonly planId: "planId";
+    readonly createdAt: "createdAt";
+    readonly updatedAt: "updatedAt";
+};
+export type OrganizationScalarFieldEnum = (typeof OrganizationScalarFieldEnum)[keyof typeof OrganizationScalarFieldEnum];
+export declare const OrganizationMemberScalarFieldEnum: {
+    readonly id: "id";
+    readonly organizationId: "organizationId";
+    readonly userId: "userId";
+    readonly role: "role";
+    readonly joinedAt: "joinedAt";
+};
+export type OrganizationMemberScalarFieldEnum = (typeof OrganizationMemberScalarFieldEnum)[keyof typeof OrganizationMemberScalarFieldEnum];
+export declare const PetitionTemplateScalarFieldEnum: {
+    readonly id: "id";
+    readonly name: "name";
+    readonly description: "description";
+    readonly content: "content";
+    readonly category: "category";
+    readonly planId: "planId";
+    readonly isPublic: "isPublic";
+    readonly createdAt: "createdAt";
+    readonly updatedAt: "updatedAt";
+};
+export type PetitionTemplateScalarFieldEnum = (typeof PetitionTemplateScalarFieldEnum)[keyof typeof PetitionTemplateScalarFieldEnum];
+export declare const SessionScalarFieldEnum: {
+    readonly id: "id";
+    readonly userId: "userId";
+    readonly userAgent: "userAgent";
+    readonly ipAddress: "ipAddress";
+    readonly isActive: "isActive";
+    readonly createdAt: "createdAt";
+    readonly expiresAt: "expiresAt";
+};
+export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum];
+export declare const SortOrder: {
+    readonly asc: "asc";
+    readonly desc: "desc";
+};
+export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder];
+export declare const QueryMode: {
+    readonly default: "default";
+    readonly insensitive: "insensitive";
+};
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode];
+export declare const NullsOrder: {
+    readonly first: "first";
+    readonly last: "last";
+};
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder];
