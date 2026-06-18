@@ -13,13 +13,14 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CpfMaskPipe } from '../common/pipes';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(@Body() dto: CreateUserDto) {
+  create(@Body(CpfMaskPipe) dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
 
@@ -37,7 +38,10 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserDto) {
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(CpfMaskPipe) dto: UpdateUserDto,
+  ) {
     return this.usersService.update(id, dto);
   }
 

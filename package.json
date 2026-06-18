@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npm run prisma:generate && nest build",
+    "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -20,10 +20,10 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "npm run prisma:generate && ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts"
   },
   "prisma": {
-    "seed": "npm run prisma:seed"
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -100,7 +100,6 @@
       "<rootDir>/__mocks__/setup.ts"
     ],
     "moduleNameMapper": {
-      "^@prisma/client$": "<rootDir>/__mocks__/prisma-client.ts",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     }
   }

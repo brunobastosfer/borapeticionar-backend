@@ -1,4 +1,4 @@
-jest.mock('@prisma/client', () => ({
+jest.mock('../../generated/prisma/client.js', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
     $connect: jest.fn(),
     $disconnect: jest.fn(),
@@ -36,6 +36,12 @@ jest.mock('@prisma/client', () => ({
       findUnique: jest.fn(),
       delete: jest.fn(),
       deleteMany: jest.fn(),
+    },
+    passwordResetToken: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
     },
     petitionUsage: {
       create: jest.fn(),

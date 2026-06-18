@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -52,6 +53,7 @@ model User {
   petitions       Petition[]
   favorites       Favorite[]
   refreshTokens   RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
   petitionUsage   PetitionUsage[]
   ownedOrganizations Organization[] @relation("OrganizationOwner")
   organizationMemberships OrganizationMember[]
@@ -140,6 +142,20 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model PetitionUsage {

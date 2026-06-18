@@ -36,6 +36,12 @@ export const PrismaClient = jest.fn().mockImplementation(() => ({
     delete: jest.fn(),
     deleteMany: jest.fn(),
   },
+  passwordResetToken: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+  },
   petitionUsage: {
     create: jest.fn(),
     findUnique: jest.fn(),

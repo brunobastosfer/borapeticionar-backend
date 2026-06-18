@@ -1,5 +1,6 @@
 import { IsOptional, IsString, IsEnum } from 'class-validator';
-import { PetitionStatus } from '@prisma/client';
+import { PetitionStatus } from '../../../generated/prisma/client.js';
+import { IsValidCnpj, IsValidCpfCnpj } from '../../common/validators';
 
 export class UpdatePetitionDto {
   @IsOptional()
@@ -20,6 +21,7 @@ export class UpdatePetitionDto {
 
   @IsOptional()
   @IsString()
+  @IsValidCpfCnpj()
   cpfCnpj?: string;
 
   @IsOptional()
@@ -44,6 +46,7 @@ export class UpdatePetitionDto {
 
   @IsOptional()
   @IsString()
+  @IsValidCnpj()
   cnpj?: string;
 
   @IsOptional()

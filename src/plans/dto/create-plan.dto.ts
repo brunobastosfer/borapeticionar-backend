@@ -7,7 +7,7 @@ import {
   IsArray,
   IsEnum,
 } from 'class-validator';
-import { PlanType } from '@prisma/client';
+import { PlanType } from '../../../generated/prisma/client.js';
 
 export class CreatePlanDto {
   @IsNotEmpty()

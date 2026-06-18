@@ -6,7 +6,8 @@ import {
   IsEnum,
   MinLength,
 } from 'class-validator';
-import { Sex } from '@prisma/client';
+import { Sex } from '../../../generated/prisma/client.js';
+import { IsValidCpf } from '../../common/validators';
 
 export class CreateUserDto {
   @IsNotEmpty()
@@ -19,6 +20,7 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
+  @IsValidCpf()
   cpf: string;
 
   @IsOptional()

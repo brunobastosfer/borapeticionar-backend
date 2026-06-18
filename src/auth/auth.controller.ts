@@ -1,19 +1,19 @@
 import {
-  Controller,
-  Post,
   Body,
-  UseGuards,
-  Request,
+  Controller,
+  Headers,
   HttpCode,
   HttpStatus,
-  Headers,
   Ip,
+  Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -31,22 +31,27 @@ export class AuthController {
     return this.authService.login(req.user, userAgent || 'Unknown', ipAddress);
   }
 
-  @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(
-    @Request() req: { user: { id: string; refreshToken: string } },
-  ) {
-    return this.authService.refreshTokens(req.user.id, req.user.refreshToken);
+  async refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshTokens(dto.refreshToken);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.requestPasswordReset(dto.institutionalEmail);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
+  }
+
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(
-    @Request() req: { user: { id: string } },
-    @Body() dto: RefreshTokenDto,
-  ) {
-    return this.authService.logout(req.user.id, dto.refreshToken);
+  async logout(@Body() dto: RefreshTokenDto) {
+    return this.authService.logout(dto.refreshToken);
   }
 }

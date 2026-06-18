@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PlansService } from './plans.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { PlanType, Role } from '@prisma/client';
+import { PlanType, Role } from '../../generated/prisma/client.js';
 
 describe('PlansService', () => {
   let service: PlansService;

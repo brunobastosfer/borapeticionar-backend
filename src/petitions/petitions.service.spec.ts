@@ -7,11 +7,13 @@ import {
 } from '@nestjs/common';
 import { PetitionsService } from './petitions.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { PetitionStatus } from '@prisma/client';
+import { PetitionStatus } from '../../generated/prisma/client.js';
+import { AuthMailerService } from '../auth/auth-mailer.service';
 
 describe('PetitionsService', () => {
   let service: PetitionsService;
   let prisma: PrismaService;
+  let authMailerService: AuthMailerService;
 
   const mockPrisma = {
     petition: {
@@ -37,16 +39,22 @@ describe('PetitionsService', () => {
     },
   };
 
+  const mockAuthMailerService = {
+    sendPetitionPdfEmail: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PetitionsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuthMailerService, useValue: mockAuthMailerService },
       ],
     }).compile();
 
     service = module.get<PetitionsService>(PetitionsService);
     prisma = module.get<PrismaService>(PrismaService);
+    authMailerService = module.get<AuthMailerService>(AuthMailerService);
 
     jest.clearAllMocks();
   });
@@ -362,6 +370,74 @@ describe('PetitionsService', () => {
       const result = await service.canExportWord('user1');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('sendPetitionMail', () => {
+    const activePetition = {
+      id: '1',
+      userId: 'user1',
+      status: PetitionStatus.ACTIVE,
+      fullName: 'John Doe',
+      cpfCnpj: '12345678900',
+      rg: null,
+      maritalStatus: null,
+      cep: null,
+      street: null,
+      defendantCompany: 'Company',
+      cnpj: null,
+      facts: 'Facts',
+      requests: 'Requests',
+      practiceArea: 'trabalhista',
+    };
+
+    it('should send generated petition PDF to informed email', async () => {
+      mockPrisma.petition.findUnique.mockResolvedValue(activePetition);
+      mockAuthMailerService.sendPetitionPdfEmail.mockResolvedValue(undefined);
+
+      const result = await service.sendPetitionMail(
+        'user1',
+        '1',
+        'Destino@Example.com ',
+      );
+
+      expect(result).toEqual({
+        petitionId: '1',
+        recipientEmail: 'destino@example.com',
+        status: 'SENT',
+        message: 'Peticao enviada por email com sucesso',
+      });
+      expect(mockAuthMailerService.sendPetitionPdfEmail).toHaveBeenCalledWith({
+        to: 'destino@example.com',
+        petitionId: '1',
+        pdfFilename: 'peticao-1.pdf',
+        pdfBuffer: expect.any(Buffer),
+      });
+
+      const sentPayload =
+        mockAuthMailerService.sendPetitionPdfEmail.mock.calls[0][0];
+      expect(sentPayload.pdfBuffer.subarray(0, 4).toString()).toBe('%PDF');
+    });
+
+    it('should block draft petition email sending', async () => {
+      mockPrisma.petition.findUnique.mockResolvedValue({
+        ...activePetition,
+        status: PetitionStatus.DRAFT,
+      });
+
+      await expect(
+        service.sendPetitionMail('user1', '1', 'destino@example.com'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockAuthMailerService.sendPetitionPdfEmail).not.toHaveBeenCalled();
+    });
+
+    it('should require a valid recipient email', async () => {
+      mockPrisma.petition.findUnique.mockResolvedValue(activePetition);
+
+      await expect(
+        service.sendPetitionMail('user1', '1', 'email-invalido'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockAuthMailerService.sendPetitionPdfEmail).not.toHaveBeenCalled();
     });
   });
 

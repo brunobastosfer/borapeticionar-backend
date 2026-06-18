@@ -1,20 +1,26 @@
 import {
-  Controller,
-  Get,
-  Post,
+  BadRequestException,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  UseGuards,
-  Request,
-  ParseUUIDPipe,
   ForbiddenException,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Request,
+  Res,
+  StreamableFile,
+  UseGuards,
 } from '@nestjs/common';
-import { PetitionsService } from './petitions.service';
-import { CreatePetitionDto } from './dto/create-petition.dto';
-import { UpdatePetitionDto } from './dto/update-petition.dto';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CpfCnpjMaskPipe } from '../common/pipes';
+import { CreatePetitionDto } from './dto/create-petition.dto';
+import { SendPetitionMailDto } from './dto/send-petition-mail.dto';
+import { UpdatePetitionDto } from './dto/update-petition.dto';
+import { PetitionsService } from './petitions.service';
 
 @Controller('petitions')
 @UseGuards(JwtAuthGuard)
@@ -24,7 +30,7 @@ export class PetitionsController {
   @Post()
   create(
     @Request() req: { user: { id: string } },
-    @Body() dto: CreatePetitionDto,
+    @Body(CpfCnpjMaskPipe) dto: CreatePetitionDto,
   ) {
     return this.petitionsService.create(req.user.id, dto);
   }
@@ -32,9 +38,25 @@ export class PetitionsController {
   @Post('draft')
   saveDraft(
     @Request() req: { user: { id: string } },
-    @Body() dto: CreatePetitionDto,
+    @Body(CpfCnpjMaskPipe) dto: CreatePetitionDto,
   ) {
     return this.petitionsService.saveDraft(req.user.id, dto);
+  }
+
+  @Post('enviar-peticao/mail')
+  sendPetitionMailByBody(
+    @Request() req: { user: { id: string } },
+    @Body() dto: SendPetitionMailDto,
+  ) {
+    if (!dto.petitionId) {
+      throw new BadRequestException('Informe o id da peticao');
+    }
+
+    return this.petitionsService.sendPetitionMail(
+      req.user.id,
+      dto.petitionId,
+      this.resolveRecipientEmail(dto),
+    );
   }
 
   @Post(':id/activate')
@@ -70,6 +92,28 @@ export class PetitionsController {
     return this.petitionsService.getFavorites(req.user.id);
   }
 
+  @Get('permissions/me')
+  getPermissions(@Request() req: { user: { id: string } }) {
+    return this.petitionsService.getUserPermissions(req.user.id);
+  }
+
+  @Get(':id/download-pdf')
+  async downloadPdf(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: { user: { id: string } },
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const file = await this.petitionsService.downloadPdf(req.user.id, id);
+
+    response.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+      'Content-Length': file.buffer.length.toString(),
+    });
+
+    return new StreamableFile(file.buffer);
+  }
+
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -82,7 +126,7 @@ export class PetitionsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Request() req: { user: { id: string } },
-    @Body() dto: UpdatePetitionDto,
+    @Body(CpfCnpjMaskPipe) dto: UpdatePetitionDto,
   ) {
     return this.petitionsService.update(id, req.user.id, dto);
   }
@@ -111,6 +155,19 @@ export class PetitionsController {
     return this.petitionsService.addFavorite(req.user.id, id);
   }
 
+  @Post(':id/enviar-peticao/mail')
+  sendPetitionMail(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: { user: { id: string } },
+    @Body() dto: SendPetitionMailDto,
+  ) {
+    return this.petitionsService.sendPetitionMail(
+      req.user.id,
+      id,
+      this.resolveRecipientEmail(dto),
+    );
+  }
+
   @Delete(':id/favorite')
   removeFavorite(
     @Param('id', ParseUUIDPipe) id: string,
@@ -127,7 +184,7 @@ export class PetitionsController {
     const canExport = await this.petitionsService.canExportPdf(req.user.id);
     if (!canExport) {
       throw new ForbiddenException(
-        'Seu plano não permite exportação de PDF. Faça upgrade.',
+        'Seu plano nao permite exportacao de PDF. Faca upgrade.',
       );
     }
     return { canExport: true };
@@ -141,14 +198,13 @@ export class PetitionsController {
     const canExport = await this.petitionsService.canExportWord(req.user.id);
     if (!canExport) {
       throw new ForbiddenException(
-        'Seu plano não permite exportação de Word. Faça upgrade.',
+        'Seu plano nao permite exportacao de Word. Faca upgrade.',
       );
     }
     return { canExport: true };
   }
 
-  @Get('permissions/me')
-  getPermissions(@Request() req: { user: { id: string } }) {
-    return this.petitionsService.getUserPermissions(req.user.id);
+  private resolveRecipientEmail(dto: SendPetitionMailDto) {
+    return dto.recipientEmail ?? dto.email;
   }
 }

@@ -7,11 +7,15 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePetitionDto } from './dto/create-petition.dto';
 import { UpdatePetitionDto } from './dto/update-petition.dto';
-import { PetitionStatus } from '@prisma/client';
+import { PetitionStatus } from '../../generated/prisma/client.js';
+import { AuthMailerService } from '../auth/auth-mailer.service';
 
 @Injectable()
 export class PetitionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authMailerService: AuthMailerService,
+  ) {}
 
   async create(userId: string, dto: CreatePetitionDto) {
     await this.checkPetitionLimit(userId);
@@ -192,6 +196,54 @@ export class PetitionsService {
     return user.plan.canExportWord;
   }
 
+  async downloadPdf(userId: string, petitionId: string) {
+    const petition = await this.findGeneratedPetition(
+      petitionId,
+      userId,
+      'baixar PDF',
+    );
+
+    const canExport = await this.canExportPdf(userId);
+    if (!canExport) {
+      throw new ForbiddenException(
+        'Seu plano nao permite exportacao de PDF. Faca upgrade.',
+      );
+    }
+
+    return {
+      filename: `peticao-${petition.id}.pdf`,
+      buffer: this.buildPetitionPdf(this.buildPetitionText(petition)),
+    };
+  }
+
+  async sendPetitionMail(
+    userId: string,
+    petitionId: string,
+    recipientEmail?: string,
+  ) {
+    const petition = await this.findGeneratedPetition(
+      petitionId,
+      userId,
+      'enviadas por email',
+    );
+    const to = this.normalizeRecipientEmail(recipientEmail);
+    const filename = `peticao-${petition.id}.pdf`;
+
+    await this.authMailerService.sendPetitionPdfEmail({
+      to,
+      petitionId: petition.id,
+      pdfFilename: filename,
+      pdfBuffer: this.buildPetitionPdf(this.buildPetitionText(petition)),
+    });
+
+    return {
+      petitionId: petition.id,
+      recipientEmail: to,
+      status: 'SENT',
+      message: 'Peticao enviada por email com sucesso',
+    };
+  }
+
   async getUserPermissions(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -322,5 +374,240 @@ export class PetitionsService {
         data: { userId, year, month, count: 1 },
       });
     }
+  }
+
+  private async findGeneratedPetition(
+    id: string,
+    userId: string,
+    operation: string,
+  ) {
+    const petition = await this.findOne(id, userId);
+
+    if (petition.status === PetitionStatus.DRAFT) {
+      throw new BadRequestException(`Rascunhos nao podem ser ${operation}`);
+    }
+
+    return petition;
+  }
+
+  private normalizeRecipientEmail(email?: string) {
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    if (
+      !normalizedEmail ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+    ) {
+      throw new BadRequestException(
+        'Informe um email valido para receber a peticao',
+      );
+    }
+
+    return normalizedEmail;
+  }
+
+  private buildPetitionText(petition: {
+    fullName: string;
+    cpfCnpj: string;
+    rg?: string | null;
+    maritalStatus?: string | null;
+    cep?: string | null;
+    street?: string | null;
+    defendantCompany: string;
+    cnpj?: string | null;
+    facts: string;
+    requests: string;
+    practiceArea?: string | null;
+  }) {
+    return [
+      'PETICAO',
+      '',
+      petition.practiceArea && `Area: ${petition.practiceArea}`,
+      `Requerente: ${petition.fullName}`,
+      `CPF/CNPJ: ${petition.cpfCnpj}`,
+      petition.rg && `RG: ${petition.rg}`,
+      petition.maritalStatus && `Estado civil: ${petition.maritalStatus}`,
+      petition.cep && `CEP: ${petition.cep}`,
+      petition.street && `Endereco: ${petition.street}`,
+      '',
+      `Parte requerida: ${petition.defendantCompany}`,
+      petition.cnpj && `CNPJ: ${petition.cnpj}`,
+      '',
+      'Fatos',
+      petition.facts,
+      '',
+      'Pedidos',
+      petition.requests,
+    ]
+      .filter((line): line is string => typeof line === 'string')
+      .join('\n');
+  }
+
+  private buildPetitionPdf(content: string): Buffer {
+    const lines = this.paginatePdfLines(content);
+    const pages = this.chunk(lines, 50);
+    const objects: Buffer[] = [];
+    const pageObjectIds: number[] = [];
+    const fontObjectId = 3;
+
+    objects.push(this.pdfObject(1, '<< /Type /Catalog /Pages 2 0 R >>'));
+    objects.push(Buffer.alloc(0));
+    objects.push(
+      this.pdfObject(
+        fontObjectId,
+        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+      ),
+    );
+
+    let nextObjectId = 4;
+    for (const pageLines of pages.length > 0 ? pages : [['']]) {
+      const pageObjectId = nextObjectId++;
+      const contentObjectId = nextObjectId++;
+      pageObjectIds.push(pageObjectId);
+
+      const stream = this.buildPdfTextStream(pageLines);
+      objects.push(
+        this.pdfObject(
+          pageObjectId,
+          `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`,
+        ),
+      );
+      objects.push(this.pdfStreamObject(contentObjectId, stream));
+    }
+
+    objects[1] = this.pdfObject(
+      2,
+      `<< /Type /Pages /Kids [${pageObjectIds
+        .map((id) => `${id} 0 R`)
+        .join(' ')}] /Count ${pageObjectIds.length} >>`,
+    );
+
+    return this.assemblePdf(objects);
+  }
+
+  private paginatePdfLines(content: string): string[] {
+    return content
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .flatMap((paragraph) => this.wrapPdfLine(paragraph.trimEnd(), 88));
+  }
+
+  private wrapPdfLine(line: string, maxLength: number): string[] {
+    if (!line) return [''];
+
+    const words = line.split(/\s+/);
+    const lines: string[] = [];
+    let current = '';
+
+    for (const word of words) {
+      if (!current) {
+        current = word;
+        continue;
+      }
+
+      if (`${current} ${word}`.length > maxLength) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = `${current} ${word}`;
+      }
+    }
+
+    if (current) lines.push(current);
+    return lines;
+  }
+
+  private buildPdfTextStream(lines: string[]): Buffer {
+    const commands = [
+      'BT',
+      '/F1 12 Tf',
+      '72 770 Td',
+      '15 TL',
+      ...lines.map((line, index) => {
+        const command = `(${this.escapePdfText(line)}) Tj`;
+        return index === lines.length - 1 ? command : `${command} T*`;
+      }),
+      'ET',
+    ].join('\n');
+
+    return Buffer.from(commands, 'latin1');
+  }
+
+  private escapePdfText(text: string): string {
+    return this.toWinAnsi(text)
+      .replace(/\\/g, '\\\\')
+      .replace(/\(/g, '\\(')
+      .replace(/\)/g, '\\)');
+  }
+
+  private toWinAnsi(text: string): string {
+    const replacements: Record<string, string> = {
+      '\u2013': '-',
+      '\u2014': '-',
+      '\u2018': "'",
+      '\u2019': "'",
+      '\u201c': '"',
+      '\u201d': '"',
+      '\u2022': '-',
+      '\u00a0': ' ',
+    };
+
+    return Array.from(text)
+      .map((char) => {
+        if (replacements[char]) return replacements[char];
+        return char.charCodeAt(0) <= 255 ? char : '?';
+      })
+      .join('');
+  }
+
+  private pdfObject(id: number, body: string): Buffer {
+    return Buffer.from(`${id} 0 obj\n${body}\nendobj\n`, 'latin1');
+  }
+
+  private pdfStreamObject(id: number, stream: Buffer): Buffer {
+    return Buffer.concat([
+      Buffer.from(
+        `${id} 0 obj\n<< /Length ${stream.length} >>\nstream\n`,
+        'latin1',
+      ),
+      stream,
+      Buffer.from('\nendstream\nendobj\n', 'latin1'),
+    ]);
+  }
+
+  private assemblePdf(objects: Buffer[]): Buffer {
+    const header = Buffer.from('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n', 'binary');
+    const offsets: number[] = [];
+    let cursor = header.length;
+
+    for (const object of objects) {
+      offsets.push(cursor);
+      cursor += object.length;
+    }
+
+    const body = Buffer.concat(objects);
+    const xrefOffset = header.length + body.length;
+    const xrefLines = [
+      'xref',
+      `0 ${objects.length + 1}`,
+      '0000000000 65535 f ',
+      ...offsets.map(
+        (offset) => `${offset.toString().padStart(10, '0')} 00000 n `,
+      ),
+      'trailer',
+      `<< /Size ${objects.length + 1} /Root 1 0 R >>`,
+      'startxref',
+      `${xrefOffset}`,
+      '%%EOF',
+    ].join('\n');
+
+    return Buffer.concat([header, body, Buffer.from(xrefLines, 'latin1')]);
+  }
+
+  private chunk<T>(items: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let index = 0; index < items.length; index += size) {
+      chunks.push(items.slice(index, index + size));
+    }
+    return chunks;
   }
 }

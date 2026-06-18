@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsValidCnpj, IsValidCpfCnpj } from '../../common/validators';
 
 export class CreatePetitionDto {
   @IsOptional()
@@ -19,6 +20,7 @@ export class CreatePetitionDto {
 
   @IsNotEmpty()
   @IsString()
+  @IsValidCpfCnpj()
   cpfCnpj: string;
 
   @IsOptional()
@@ -43,6 +45,7 @@ export class CreatePetitionDto {
 
   @IsOptional()
   @IsString()
+  @IsValidCnpj()
   cnpj?: string;
 
   @IsNotEmpty()

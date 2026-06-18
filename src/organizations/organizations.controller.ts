@@ -15,6 +15,7 @@ import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CnpjMaskPipe } from '../common/pipes';
 
 @Controller('organizations')
 @UseGuards(JwtAuthGuard)
@@ -24,7 +25,7 @@ export class OrganizationsController {
   @Post()
   create(
     @Request() req: { user: { id: string } },
-    @Body() dto: CreateOrganizationDto,
+    @Body(CnpjMaskPipe) dto: CreateOrganizationDto,
   ) {
     return this.organizationsService.create(req.user.id, dto);
   }
@@ -51,7 +52,7 @@ export class OrganizationsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Request() req: { user: { id: string } },
-    @Body() dto: UpdateOrganizationDto,
+    @Body(CnpjMaskPipe) dto: UpdateOrganizationDto,
   ) {
     return this.organizationsService.update(id, req.user.id, dto);
   }
