@@ -84,7 +84,11 @@ describe('PlansService', () => {
       expect(result.role).toBe(Role.COMPANY);
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user1' },
-        data: { planId: 'plan1', role: Role.COMPANY },
+        data: {
+          planId: 'plan1',
+          planExpiresAt: expect.any(Date),
+          role: Role.COMPANY,
+        },
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         select: expect.any(Object),
       });
@@ -112,6 +116,51 @@ describe('PlansService', () => {
       const result = await service.subscribe('user1', 'plan1');
 
       expect(result.role).toBe(Role.USER);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user1' },
+        data: {
+          planId: 'plan1',
+          planExpiresAt: expect.any(Date),
+          role: Role.USER,
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        select: expect.any(Object),
+      });
+    });
+
+    it('should subscribe user to free plan without expiration date', async () => {
+      const mockPlan = {
+        id: 'freePlan',
+        type: PlanType.FREE,
+        isAvailable: true,
+      };
+      const mockUser = {
+        id: 'user1',
+        role: Role.USER,
+        plan: mockPlan,
+        planExpiresAt: null,
+      };
+      const freePlan = { id: 'freePlan', type: PlanType.FREE };
+
+      mockPrisma.plan.findUnique
+        .mockResolvedValueOnce(mockPlan)
+        .mockResolvedValueOnce(freePlan);
+      mockPrisma.user.update.mockResolvedValue(mockUser);
+      mockPrisma.user.updateMany.mockResolvedValue({ count: 0 });
+
+      const result = await service.subscribe('user1', 'freePlan');
+
+      expect(result.planExpiresAt).toBeNull();
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user1' },
+        data: {
+          planId: 'freePlan',
+          planExpiresAt: null,
+          role: Role.USER,
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        select: expect.any(Object),
+      });
     });
 
     it('should throw ForbiddenException when plan is not available', async () => {
@@ -149,7 +198,7 @@ describe('PlansService', () => {
 
       expect(mockPrisma.user.updateMany).toHaveBeenCalledWith({
         where: { linkedToId: 'user1' },
-        data: { planId: 'freePlan' },
+        data: { planId: 'freePlan', planExpiresAt: null },
       });
     });
   });
@@ -160,6 +209,7 @@ describe('PlansService', () => {
         id: 'company1',
         role: Role.COMPANY,
         planId: 'officePlan',
+        planExpiresAt: new Date('2026-07-19T00:00:00.000Z'),
         plan: { id: 'officePlan' },
         linkedUsers: [],
       };

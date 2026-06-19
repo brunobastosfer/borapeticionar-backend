@@ -51,6 +51,7 @@ export class UsersService {
         hasSeenTutorial: true,
         institutionalEmail: true,
         planId: true,
+        planExpiresAt: true,
         createdAt: true,
       },
     });
@@ -71,6 +72,7 @@ export class UsersService {
         hasSeenTutorial: true,
         institutionalEmail: true,
         planId: true,
+        planExpiresAt: true,
         createdAt: true,
       },
     });
@@ -117,6 +119,7 @@ export class UsersService {
         hasSeenTutorial: true,
         institutionalEmail: true,
         planId: true,
+        planExpiresAt: true,
         createdAt: true,
       },
     });

@@ -102,6 +102,7 @@ describe('UsersService', () => {
         firstName: 'John',
         lastName: 'Doe',
         password: 'hashedPassword',
+        planExpiresAt: new Date('2026-07-19T00:00:00.000Z'),
         plan: { id: 'plan1' },
       };
 
@@ -111,6 +112,9 @@ describe('UsersService', () => {
 
       expect(result).toBeDefined();
       expect(result.id).toBe('1');
+      expect(result.planExpiresAt).toEqual(
+        new Date('2026-07-19T00:00:00.000Z'),
+      );
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect((result as any).password).toBeUndefined();
     });

@@ -24,6 +24,7 @@ describe('PetitionsController', () => {
     removeFavorite: jest.fn(),
     canExportPdf: jest.fn(),
     canExportWord: jest.fn(),
+    getDashboardSummary: jest.fn(),
     getUserPermissions: jest.fn(),
   };
 
@@ -167,6 +168,29 @@ describe('PetitionsController', () => {
       const result = await controller.getPermissions(req);
 
       expect(result).toEqual(expectedResult);
+    });
+  });
+
+  describe('getDashboardSummary', () => {
+    it('should return dashboard counters', async () => {
+      const req = { user: { id: 'user1' } };
+      const expectedResult = {
+        petitionsRemaining: 10,
+        petitionsGenerated: 5,
+        petitionsCanceled: 2,
+        favoritePiecesTotal: 3,
+      };
+
+      mockPetitionsService.getDashboardSummary.mockResolvedValue(
+        expectedResult,
+      );
+
+      const result = await controller.getDashboardSummary(req);
+
+      expect(result).toEqual(expectedResult);
+      expect(mockPetitionsService.getDashboardSummary).toHaveBeenCalledWith(
+        'user1',
+      );
     });
   });
 });

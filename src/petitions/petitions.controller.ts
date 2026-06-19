@@ -97,6 +97,11 @@ export class PetitionsController {
     return this.petitionsService.getUserPermissions(req.user.id);
   }
 
+  @Get('dashboard/me')
+  getDashboardSummary(@Request() req: { user: { id: string } }) {
+    return this.petitionsService.getDashboardSummary(req.user.id);
+  }
+
   @Get(':id/download-pdf')
   async downloadPdf(
     @Param('id', ParseUUIDPipe) id: string,

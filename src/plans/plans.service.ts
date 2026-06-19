@@ -9,6 +9,8 @@ import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { PlanType, Role } from '@prisma/client';
 
+const PAID_PLAN_DURATION_MONTHS = 1;
+
 @Injectable()
 export class PlansService {
   constructor(private readonly prisma: PrismaService) {}
@@ -59,12 +61,17 @@ export class PlansService {
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: { planId: plan.id, role: newRole },
+      data: {
+        planId: plan.id,
+        planExpiresAt: this.calculatePlanExpiresAt(plan.type),
+        role: newRole,
+      },
       select: {
         id: true,
         firstName: true,
         lastName: true,
         institutionalEmail: true,
+        planExpiresAt: true,
         role: true,
         plan: true,
       },
@@ -148,12 +155,14 @@ export class PlansService {
       data: {
         linkedToId: companyUserId,
         planId: companyUser.planId,
+        planExpiresAt: companyUser.planExpiresAt,
       },
       select: {
         id: true,
         firstName: true,
         lastName: true,
         institutionalEmail: true,
+        planExpiresAt: true,
         plan: true,
       },
     });
@@ -187,6 +196,7 @@ export class PlansService {
       data: {
         linkedToId: null,
         planId: freePlan?.id || null,
+        planExpiresAt: null,
       },
     });
   }
@@ -201,6 +211,7 @@ export class PlansService {
             firstName: true,
             lastName: true,
             institutionalEmail: true,
+            planExpiresAt: true,
             plan: true,
           },
         },
@@ -223,7 +234,17 @@ export class PlansService {
 
     await this.prisma.user.updateMany({
       where: { linkedToId: companyUserId },
-      data: { planId: freePlan?.id || null },
+      data: { planId: freePlan?.id || null, planExpiresAt: null },
     });
+  }
+
+  private calculatePlanExpiresAt(planType: PlanType) {
+    if (planType === PlanType.FREE) {
+      return null;
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + PAID_PLAN_DURATION_MONTHS);
+    return expiresAt;
   }
 }

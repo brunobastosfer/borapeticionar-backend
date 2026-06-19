@@ -289,6 +289,50 @@ export class PetitionsService {
     };
   }
 
+  async getDashboardSummary(userId: string) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+
+    const [user, usage, petitionsCanceled, favoritePiecesTotal] =
+      await Promise.all([
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          include: { plan: true },
+        }),
+        this.prisma.petitionUsage.findUnique({
+          where: {
+            userId_year_month: {
+              userId,
+              year,
+              month,
+            },
+          },
+        }),
+        this.prisma.petition.count({
+          where: { userId, status: PetitionStatus.ARCHIVED },
+        }),
+        this.prisma.favorite.count({ where: { userId } }),
+      ]);
+
+    if (!user || !user.plan) {
+      throw new NotFoundException('Usuário sem plano ativo');
+    }
+
+    const petitionsGenerated = usage?.count ?? 0;
+    const petitionsRemaining =
+      user.plan.monthlyLimit !== null
+        ? Math.max(0, user.plan.monthlyLimit - petitionsGenerated)
+        : null;
+
+    return {
+      petitionsRemaining,
+      petitionsGenerated,
+      petitionsCanceled,
+      favoritePiecesTotal,
+    };
+  }
+
   private async checkPracticeArea(userId: string, practiceArea?: string) {
     if (!practiceArea) return;
 

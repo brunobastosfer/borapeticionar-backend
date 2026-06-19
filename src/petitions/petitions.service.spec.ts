@@ -18,6 +18,7 @@ describe('PetitionsService', () => {
   const mockPrisma = {
     petition: {
       create: jest.fn(),
+      count: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -29,6 +30,7 @@ describe('PetitionsService', () => {
     favorite: {
       findUnique: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
       delete: jest.fn(),
       findMany: jest.fn(),
     },
@@ -454,6 +456,63 @@ describe('PetitionsService', () => {
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'user1', plan: null });
 
       await expect(service.getUserPermissions('user1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('getDashboardSummary', () => {
+    it('should return home dashboard counters for user', async () => {
+      const mockUser = {
+        id: 'user1',
+        plan: {
+          monthlyLimit: 15,
+        },
+      };
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.petitionUsage.findUnique.mockResolvedValue({ count: 5 });
+      mockPrisma.petition.count.mockResolvedValue(2);
+      mockPrisma.favorite.count.mockResolvedValue(3);
+
+      const result = await service.getDashboardSummary('user1');
+
+      expect(result).toEqual({
+        petitionsRemaining: 10,
+        petitionsGenerated: 5,
+        petitionsCanceled: 2,
+        favoritePiecesTotal: 3,
+      });
+      expect(mockPrisma.petition.count).toHaveBeenCalledWith({
+        where: { userId: 'user1', status: PetitionStatus.ARCHIVED },
+      });
+      expect(mockPrisma.favorite.count).toHaveBeenCalledWith({
+        where: { userId: 'user1' },
+      });
+    });
+
+    it('should return null remaining petitions when plan is unlimited', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user1',
+        plan: { monthlyLimit: null },
+      });
+      mockPrisma.petitionUsage.findUnique.mockResolvedValue({ count: 20 });
+      mockPrisma.petition.count.mockResolvedValue(0);
+      mockPrisma.favorite.count.mockResolvedValue(0);
+
+      const result = await service.getDashboardSummary('user1');
+
+      expect(result.petitionsRemaining).toBeNull();
+      expect(result.petitionsGenerated).toBe(20);
+    });
+
+    it('should throw NotFoundException when user has no plan', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user1', plan: null });
+      mockPrisma.petitionUsage.findUnique.mockResolvedValue(null);
+      mockPrisma.petition.count.mockResolvedValue(0);
+      mockPrisma.favorite.count.mockResolvedValue(0);
+
+      await expect(service.getDashboardSummary('user1')).rejects.toThrow(
         NotFoundException,
       );
     });
