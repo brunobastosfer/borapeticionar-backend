@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PetitionsService } from './petitions.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { PetitionStatus } from '../../generated/prisma/client.js';
+import { PetitionStatus } from '@prisma/client';
 import { AuthMailerService } from '../auth/auth-mailer.service';
 
 describe('PetitionsService', () => {

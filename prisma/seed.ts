@@ -1,4 +1,4 @@
-import { PrismaClient, PlanType, Role } from '../generated/prisma/client.js';
+import { PrismaClient, PlanType, Role } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 

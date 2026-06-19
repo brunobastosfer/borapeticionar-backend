@@ -1,4 +1,8 @@
 node_modules
+dist
+.jest-cache
+src/.jest-cache
+tsconfig.build.tsbuildinfo
 # Keep environment variables out of version control
 .env
 

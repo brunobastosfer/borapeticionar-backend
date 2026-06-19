@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
-import { PlanType, Role } from '../../generated/prisma/client.js';
+import { PlanType, Role } from '@prisma/client';
 
 @Injectable()
 export class PlansService {
