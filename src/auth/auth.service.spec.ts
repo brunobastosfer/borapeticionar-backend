@@ -128,6 +128,7 @@ describe('AuthService', () => {
         id: '1',
         institutionalEmail: 'test@test.com',
         role: 'USER',
+        hasSeenTutorial: false,
       };
 
       mockPrisma.session.findFirst.mockResolvedValue({
@@ -148,6 +149,7 @@ describe('AuthService', () => {
         id: '1',
         institutionalEmail: 'test@test.com',
         role: 'USER',
+        hasSeenTutorial: false,
       };
 
       mockPrisma.session.findFirst.mockResolvedValue({
@@ -184,6 +186,7 @@ describe('AuthService', () => {
         id: '1',
         institutionalEmail: 'test@test.com',
         role: 'USER',
+        hasSeenTutorial: true,
       };
 
       mockPrisma.session.findFirst.mockResolvedValue(null);
@@ -198,6 +201,7 @@ describe('AuthService', () => {
 
       expect(result.accessToken).toBe('accessToken');
       expect(result.refreshToken).toBeDefined();
+      expect(result.user.hasSeenTutorial).toBe(true);
       expect(mockPrisma.session.create).toHaveBeenCalled();
     });
   });

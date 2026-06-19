@@ -45,11 +45,10 @@ describe('PetitionsController', () => {
     it('should create a petition', async () => {
       const req = { user: { id: 'user1' } };
       const dto = {
-        fullName: 'John Doe',
-        cpfCnpj: '12345678900',
-        defendantCompany: 'Company',
-        facts: 'Facts',
-        requests: 'Requests',
+        content: 'Petition content',
+        font: 'Merriweather',
+        practiceArea: 'trabalhista',
+        textColor: '#1b1c1c',
       };
       const expectedResult = { id: '1', ...dto };
 
@@ -65,11 +64,10 @@ describe('PetitionsController', () => {
     it('should save a draft', async () => {
       const req = { user: { id: 'user1' } };
       const dto = {
-        fullName: 'John Doe',
-        cpfCnpj: '12345678900',
-        defendantCompany: 'Company',
-        facts: 'Facts',
-        requests: 'Requests',
+        content: 'Draft petition content',
+        font: 'Merriweather',
+        practiceArea: 'trabalhista',
+        textColor: '#1b1c1c',
       };
       const expectedResult = { id: '1', status: 'DRAFT', ...dto };
 

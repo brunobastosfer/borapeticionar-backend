@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEmail,
   IsOptional,
   IsString,
@@ -27,6 +28,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   practiceArea?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  hasSeenTutorial?: boolean;
 
   @IsOptional()
   @IsEmail()

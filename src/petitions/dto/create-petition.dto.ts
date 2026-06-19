@@ -16,12 +16,16 @@ export class CreatePetitionDto {
 
   @IsNotEmpty()
   @IsString()
-  fullName: string;
+  content: string;
 
-  @IsNotEmpty()
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @IsOptional()
   @IsString()
   @IsValidCpfCnpj()
-  cpfCnpj: string;
+  cpfCnpj?: string;
 
   @IsOptional()
   @IsString()
@@ -39,20 +43,20 @@ export class CreatePetitionDto {
   @IsString()
   street?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  defendantCompany: string;
+  defendantCompany?: string;
 
   @IsOptional()
   @IsString()
   @IsValidCnpj()
   cnpj?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  facts: string;
+  facts?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  requests: string;
+  requests?: string;
 }

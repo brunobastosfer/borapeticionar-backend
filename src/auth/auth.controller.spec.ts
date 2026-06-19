@@ -30,7 +30,12 @@ describe('AuthController', () => {
   describe('login', () => {
     it('should call authService.login with correct parameters', async () => {
       const req = {
-        user: { id: '1', institutionalEmail: 'test@test.com', role: 'USER' },
+        user: {
+          id: '1',
+          institutionalEmail: 'test@test.com',
+          role: 'USER',
+          hasSeenTutorial: false,
+        },
       };
       const userAgent = 'Mozilla/5.0';
       const ipAddress = '127.0.0.1';

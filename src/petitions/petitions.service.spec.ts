@@ -62,11 +62,7 @@ describe('PetitionsService', () => {
   describe('create', () => {
     it('should create petition when within limit', async () => {
       const dto = {
-        fullName: 'John Doe',
-        cpfCnpj: '12345678900',
-        defendantCompany: 'Company',
-        facts: 'Facts',
-        requests: 'Requests',
+        content: 'Petition content',
       };
 
       const mockUser = {
@@ -91,11 +87,7 @@ describe('PetitionsService', () => {
 
     it('should throw ForbiddenException when limit reached', async () => {
       const dto = {
-        fullName: 'John Doe',
-        cpfCnpj: '12345678900',
-        defendantCompany: 'Company',
-        facts: 'Facts',
-        requests: 'Requests',
+        content: 'Petition content',
       };
 
       const mockUser = {
@@ -113,11 +105,7 @@ describe('PetitionsService', () => {
 
     it('should throw ForbiddenException when practice area not allowed', async () => {
       const dto = {
-        fullName: 'John Doe',
-        cpfCnpj: '12345678900',
-        defendantCompany: 'Company',
-        facts: 'Facts',
-        requests: 'Requests',
+        content: 'Petition content',
         practiceArea: 'civil',
       };
 
@@ -138,11 +126,7 @@ describe('PetitionsService', () => {
   describe('saveDraft', () => {
     it('should save draft without checking limits', async () => {
       const dto = {
-        fullName: 'John Doe',
-        cpfCnpj: '12345678900',
-        defendantCompany: 'Company',
-        facts: 'Facts',
-        requests: 'Requests',
+        content: 'Petition content',
       };
 
       mockPrisma.petition.create.mockResolvedValue({
@@ -164,11 +148,7 @@ describe('PetitionsService', () => {
         id: '1',
         userId: 'user1',
         status: PetitionStatus.DRAFT,
-        fullName: 'John Doe',
-        cpfCnpj: '12345678900',
-        defendantCompany: 'Company',
-        facts: 'Facts',
-        requests: 'Requests',
+        content: 'Petition content',
         practiceArea: null,
       };
 
@@ -210,11 +190,7 @@ describe('PetitionsService', () => {
         id: '1',
         userId: 'user1',
         status: PetitionStatus.DRAFT,
-        fullName: '',
-        cpfCnpj: '12345678900',
-        defendantCompany: 'Company',
-        facts: 'Facts',
-        requests: 'Requests',
+        content: '',
         practiceArea: null,
       };
 
@@ -388,6 +364,7 @@ describe('PetitionsService', () => {
       cnpj: null,
       facts: 'Facts',
       requests: 'Requests',
+      content: 'Full petition content',
       practiceArea: 'trabalhista',
     };
 

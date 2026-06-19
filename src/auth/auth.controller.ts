@@ -24,7 +24,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Request()
-    req: { user: { id: string; institutionalEmail: string; role: string } },
+    req: {
+      user: {
+        id: string;
+        institutionalEmail: string;
+        role: string;
+        hasSeenTutorial: boolean;
+      };
+    },
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
   ) {

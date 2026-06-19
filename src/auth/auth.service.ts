@@ -41,7 +41,12 @@ export class AuthService {
   }
 
   async login(
-    user: { id: string; institutionalEmail: string; role: string },
+    user: {
+      id: string;
+      institutionalEmail: string;
+      role: string;
+      hasSeenTutorial: boolean;
+    },
     userAgent: string,
     ipAddress?: string,
   ) {
@@ -85,6 +90,7 @@ export class AuthService {
         id: user.id,
         email: user.institutionalEmail,
         role: user.role,
+        hasSeenTutorial: user.hasSeenTutorial,
       },
     };
   }

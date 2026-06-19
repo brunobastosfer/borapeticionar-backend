@@ -54,20 +54,10 @@ export class PetitionsService {
     await this.checkPetitionLimit(userId);
     await this.checkPracticeArea(userId, petition.practiceArea ?? undefined);
 
-    const requiredFields = [
-      'fullName',
-      'cpfCnpj',
-      'defendantCompany',
-      'facts',
-      'requests',
-    ];
-
-    for (const field of requiredFields) {
-      if (!petition[field as keyof typeof petition]) {
-        throw new BadRequestException(
-          `Campo obrigatório '${field}' não preenchido`,
-        );
-      }
+    if (!petition.content?.trim()) {
+      throw new BadRequestException(
+        "Campo obrigatório 'content' não preenchido",
+      );
     }
 
     const updated = await this.prisma.petition.update({
@@ -406,18 +396,23 @@ export class PetitionsService {
   }
 
   private buildPetitionText(petition: {
-    fullName: string;
-    cpfCnpj: string;
+    content?: string | null;
+    fullName?: string | null;
+    cpfCnpj?: string | null;
     rg?: string | null;
     maritalStatus?: string | null;
     cep?: string | null;
     street?: string | null;
-    defendantCompany: string;
+    defendantCompany?: string | null;
     cnpj?: string | null;
-    facts: string;
-    requests: string;
+    facts?: string | null;
+    requests?: string | null;
     practiceArea?: string | null;
   }) {
+    if (petition.content?.trim()) {
+      return petition.content;
+    }
+
     return [
       'PETICAO',
       '',
