@@ -45,6 +45,7 @@ export class UsersService {
         lastName: true,
         cpf: true,
         oabNumber: true,
+        uf: true,
         sex: true,
         practiceArea: true,
         institutionalEmail: true,

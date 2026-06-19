@@ -20,6 +20,10 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
+  uf: string;
+
+  @IsNotEmpty()
+  @IsString()
   @IsValidCpf()
   cpf: string;
 
