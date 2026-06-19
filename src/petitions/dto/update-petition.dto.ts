@@ -13,7 +13,15 @@ export class UpdatePetitionDto {
 
   @IsOptional()
   @IsString()
+  documentFont?: string;
+
+  @IsOptional()
+  @IsString()
   textColor?: string;
+
+  @IsOptional()
+  @IsString()
+  documentColor?: string;
 
   @IsOptional()
   @IsString()

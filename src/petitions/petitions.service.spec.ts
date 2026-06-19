@@ -65,6 +65,8 @@ describe('PetitionsService', () => {
     it('should create petition when within limit', async () => {
       const dto = {
         content: 'Petition content',
+        documentColor: '#1b1c1c',
+        documentFont: 'Merriweather',
       };
 
       const mockUser = {
@@ -84,7 +86,15 @@ describe('PetitionsService', () => {
       const result = await service.create('user1', dto);
 
       expect(result).toBeDefined();
-      expect(mockPrisma.petition.create).toHaveBeenCalled();
+      expect(mockPrisma.petition.create).toHaveBeenCalledWith({
+        data: {
+          content: 'Petition content',
+          font: 'Merriweather',
+          textColor: '#1b1c1c',
+          userId: 'user1',
+          status: PetitionStatus.ACTIVE,
+        },
+      });
     });
 
     it('should throw ForbiddenException when limit reached', async () => {
@@ -239,6 +249,66 @@ describe('PetitionsService', () => {
       await expect(service.findOne('1', 'user1')).rejects.toThrow(
         ForbiddenException,
       );
+    });
+  });
+
+  describe('findAllByUser', () => {
+    it('should return user petitions ordered by recent first', async () => {
+      const petitions = [{ id: '1' }, { id: '2' }];
+
+      mockPrisma.petition.findMany.mockResolvedValue(petitions);
+
+      const result = await service.findAllByUser('user1');
+
+      expect(result).toEqual(petitions);
+      expect(mockPrisma.petition.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user1' },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should filter recent petitions by status and limit', async () => {
+      const petitions = [{ id: '1', status: PetitionStatus.ACTIVE }];
+
+      mockPrisma.petition.findMany.mockResolvedValue(petitions);
+
+      const result = await service.findAllByUser('user1', {
+        status: PetitionStatus.ACTIVE,
+        limit: 5,
+      });
+
+      expect(result).toEqual(petitions);
+      expect(mockPrisma.petition.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user1', status: PetitionStatus.ACTIVE },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
+    });
+  });
+
+  describe('update', () => {
+    it('should normalize document style aliases before updating petition', async () => {
+      const mockPetition = { id: '1', userId: 'user1' };
+
+      mockPrisma.petition.findUnique.mockResolvedValue(mockPetition);
+      mockPrisma.petition.update.mockResolvedValue({
+        ...mockPetition,
+        font: 'Merriweather',
+        textColor: '#1b1c1c',
+      });
+
+      await service.update('1', 'user1', {
+        documentFont: 'Merriweather',
+        documentColor: '#1b1c1c',
+      });
+
+      expect(mockPrisma.petition.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: {
+          font: 'Merriweather',
+          textColor: '#1b1c1c',
+        },
+      });
     });
   });
 

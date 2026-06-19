@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Request,
   Res,
   StreamableFile,
@@ -18,6 +19,7 @@ import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CpfCnpjMaskPipe } from '../common/pipes';
 import { CreatePetitionDto } from './dto/create-petition.dto';
+import { ListPetitionsQueryDto } from './dto/list-petitions-query.dto';
 import { SendPetitionMailDto } from './dto/send-petition-mail.dto';
 import { UpdatePetitionDto } from './dto/update-petition.dto';
 import { PetitionsService } from './petitions.service';
@@ -68,8 +70,11 @@ export class PetitionsController {
   }
 
   @Get()
-  findAll(@Request() req: { user: { id: string } }) {
-    return this.petitionsService.findAllByUser(req.user.id);
+  findAll(
+    @Request() req: { user: { id: string } },
+    @Query() query: ListPetitionsQueryDto = {},
+  ) {
+    return this.petitionsService.findAllByUser(req.user.id, query);
   }
 
   @Get('active')

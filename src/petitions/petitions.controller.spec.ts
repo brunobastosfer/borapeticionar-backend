@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Test, TestingModule } from '@nestjs/testing';
+import { PetitionStatus } from '@prisma/client';
 import { PetitionsController } from './petitions.controller';
 import { PetitionsService } from './petitions.service';
 
@@ -103,6 +104,26 @@ describe('PetitionsController', () => {
       const result = await controller.findAll(req);
 
       expect(result).toEqual(expectedResult);
+      expect(mockPetitionsService.findAllByUser).toHaveBeenCalledWith(
+        'user1',
+        {},
+      );
+    });
+
+    it('should pass status and limit filters to service', async () => {
+      const req = { user: { id: 'user1' } };
+      const query = { status: PetitionStatus.ACTIVE, limit: 5 };
+      const expectedResult = [{ id: '1', status: PetitionStatus.ACTIVE }];
+
+      mockPetitionsService.findAllByUser.mockResolvedValue(expectedResult);
+
+      const result = await controller.findAll(req, query);
+
+      expect(result).toEqual(expectedResult);
+      expect(mockPetitionsService.findAllByUser).toHaveBeenCalledWith(
+        'user1',
+        query,
+      );
     });
   });
 

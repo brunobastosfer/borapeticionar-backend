@@ -12,7 +12,15 @@ export class CreatePetitionDto {
 
   @IsOptional()
   @IsString()
+  documentFont?: string;
+
+  @IsOptional()
+  @IsString()
   textColor?: string;
+
+  @IsOptional()
+  @IsString()
+  documentColor?: string;
 
   @IsNotEmpty()
   @IsString()

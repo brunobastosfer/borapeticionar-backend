@@ -6,9 +6,22 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePetitionDto } from './dto/create-petition.dto';
+import { ListPetitionsQueryDto } from './dto/list-petitions-query.dto';
 import { UpdatePetitionDto } from './dto/update-petition.dto';
 import { PetitionStatus } from '@prisma/client';
 import { AuthMailerService } from '../auth/auth-mailer.service';
+
+type PetitionStyleAliases = {
+  font?: string;
+  textColor?: string;
+  documentFont?: string;
+  documentColor?: string;
+};
+
+type PetitionDataWithoutStyleAliases<T extends PetitionStyleAliases> = Omit<
+  T,
+  'documentFont' | 'documentColor'
+>;
 
 @Injectable()
 export class PetitionsService {
@@ -20,10 +33,11 @@ export class PetitionsService {
   async create(userId: string, dto: CreatePetitionDto) {
     await this.checkPetitionLimit(userId);
     await this.checkPracticeArea(userId, dto.practiceArea);
+    const data = this.normalizePetitionData(dto);
 
     const petition = await this.prisma.petition.create({
       data: {
-        ...dto,
+        ...data,
         userId,
         status: PetitionStatus.ACTIVE,
       },
@@ -35,9 +49,11 @@ export class PetitionsService {
   }
 
   async saveDraft(userId: string, dto: CreatePetitionDto) {
+    const data = this.normalizePetitionData(dto);
+
     return this.prisma.petition.create({
       data: {
-        ...dto,
+        ...data,
         userId,
         status: PetitionStatus.DRAFT,
       },
@@ -70,10 +86,14 @@ export class PetitionsService {
     return updated;
   }
 
-  async findAllByUser(userId: string) {
+  async findAllByUser(userId: string, query: ListPetitionsQueryDto = {}) {
     return this.prisma.petition.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(query.status ? { status: query.status } : {}),
+      },
       orderBy: { createdAt: 'desc' },
+      ...(query.limit ? { take: query.limit } : {}),
     });
   }
 
@@ -115,7 +135,7 @@ export class PetitionsService {
     await this.findOne(id, userId);
     return this.prisma.petition.update({
       where: { id },
-      data: dto,
+      data: this.normalizePetitionData(dto),
     });
   }
 
@@ -331,6 +351,28 @@ export class PetitionsService {
       petitionsCanceled,
       favoritePiecesTotal,
     };
+  }
+
+  private normalizePetitionData<T extends PetitionStyleAliases>(
+    dto: T,
+  ): PetitionDataWithoutStyleAliases<T> {
+    const { documentFont, documentColor, ...data } = dto;
+    const normalized = {
+      ...data,
+    } as PetitionDataWithoutStyleAliases<T> & {
+      font?: string;
+      textColor?: string;
+    };
+
+    if (normalized.font === undefined && documentFont !== undefined) {
+      normalized.font = documentFont;
+    }
+
+    if (normalized.textColor === undefined && documentColor !== undefined) {
+      normalized.textColor = documentColor;
+    }
+
+    return normalized;
   }
 
   private async checkPracticeArea(userId: string, practiceArea?: string) {
