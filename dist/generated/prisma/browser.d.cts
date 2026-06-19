@@ -1,0 +1,14 @@
+import * as Prisma from './internal/prismaNamespaceBrowser.cjs';
+export { Prisma };
+export * as $Enums from './enums.cjs';
+export * from './enums.cjs';
+export type User = Prisma.UserModel;
+export type Plan = Prisma.PlanModel;
+export type Petition = Prisma.PetitionModel;
+export type Favorite = Prisma.FavoriteModel;
+export type RefreshToken = Prisma.RefreshTokenModel;
+export type PetitionUsage = Prisma.PetitionUsageModel;
+export type Organization = Prisma.OrganizationModel;
+export type OrganizationMember = Prisma.OrganizationMemberModel;
+export type PetitionTemplate = Prisma.PetitionTemplateModel;
+export type Session = Prisma.SessionModel;
