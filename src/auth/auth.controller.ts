@@ -35,6 +35,7 @@ export class AuthController {
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
   ) {
+    console.log("logado");
     return this.authService.login(req.user, userAgent || 'Unknown', ipAddress);
   }
 
