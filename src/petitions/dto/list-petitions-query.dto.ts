@@ -4,6 +4,12 @@ import { PetitionStatus } from '@prisma/client';
 
 export class ListPetitionsQueryDto {
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
   @Transform(({ value }) =>
     typeof value === 'string' ? value.toUpperCase() : value,
   )

@@ -281,7 +281,27 @@ describe('PetitionsService', () => {
       expect(mockPrisma.petition.findMany).toHaveBeenCalledWith({
         where: { userId: 'user1', status: PetitionStatus.ACTIVE },
         orderBy: { createdAt: 'desc' },
+        skip: 0,
         take: 5,
+      });
+    });
+
+    it('should accept page query and apply offset without changing response shape', async () => {
+      const petitions = [{ id: '2', status: PetitionStatus.ACTIVE }];
+
+      mockPrisma.petition.findMany.mockResolvedValue(petitions);
+
+      const result = await service.findAllByUser('user1', {
+        page: 3,
+        limit: 10,
+      });
+
+      expect(result).toEqual(petitions);
+      expect(mockPrisma.petition.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user1' },
+        orderBy: { createdAt: 'desc' },
+        skip: 20,
+        take: 10,
       });
     });
   });

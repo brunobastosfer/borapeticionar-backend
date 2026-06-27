@@ -87,12 +87,15 @@ export class PetitionsService {
   }
 
   async findAllByUser(userId: string, query: ListPetitionsQueryDto = {}) {
+    const page = query.page ?? 1;
+
     return this.prisma.petition.findMany({
       where: {
         userId,
         ...(query.status ? { status: query.status } : {}),
       },
       orderBy: { createdAt: 'desc' },
+      ...(query.limit ? { skip: (page - 1) * query.limit } : {}),
       ...(query.limit ? { take: query.limit } : {}),
     });
   }
