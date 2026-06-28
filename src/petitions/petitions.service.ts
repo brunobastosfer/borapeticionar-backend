@@ -493,7 +493,14 @@ export class PetitionsService {
     cep?: string | null;
     street?: string | null;
     defendantCompany?: string | null;
+    companyAddress?: string | null;
     cnpj?: string | null;
+    courtDivision?: string | null;
+    dismissalType?: string | null;
+    controversialPoints?: string | null;
+    caseValue?: string | null;
+    requestFgtsWithdrawal?: boolean | null;
+    requestFgtsFine?: boolean | null;
     facts?: string | null;
     requests?: string | null;
     practiceArea?: string | null;
@@ -502,25 +509,44 @@ export class PetitionsService {
       return petition.content;
     }
 
+    const courtDivision = petition.courtDivision || '[vara selecionada]';
+    const fgtsRequests = [
+      petition.requestFgtsWithdrawal && 'liberação/saque do FGTS',
+      petition.requestFgtsFine && 'multa de 40% sobre o FGTS',
+    ]
+      .filter(Boolean)
+      .join(', ');
+
     return [
-      'PETICAO',
+      `Excelentíssimo Juiz da ${courtDivision}`,
       '',
-      petition.practiceArea && `Area: ${petition.practiceArea}`,
+      petition.practiceArea && `Área: ${petition.practiceArea}`,
       `Requerente: ${petition.fullName}`,
       `CPF/CNPJ: ${petition.cpfCnpj}`,
       petition.rg && `RG: ${petition.rg}`,
       petition.maritalStatus && `Estado civil: ${petition.maritalStatus}`,
       petition.cep && `CEP: ${petition.cep}`,
-      petition.street && `Endereco: ${petition.street}`,
+      petition.street && `Endereço: ${petition.street}`,
       '',
       `Parte requerida: ${petition.defendantCompany}`,
       petition.cnpj && `CNPJ: ${petition.cnpj}`,
+      petition.companyAddress && `Endereço da empresa: ${petition.companyAddress}`,
+      '',
+      'Características do Contrato',
+      petition.dismissalType && `Tipo de demissão: ${petition.dismissalType}`,
+      fgtsRequests && `Pedidos de FGTS: ${fgtsRequests}`,
+      '',
+      'Pontos controvertidos',
+      petition.controversialPoints,
       '',
       'Fatos',
       petition.facts,
       '',
       'Pedidos',
       petition.requests,
+      '',
+      'Valor da causa',
+      petition.caseValue,
     ]
       .filter((line): line is string => typeof line === 'string')
       .join('\n');

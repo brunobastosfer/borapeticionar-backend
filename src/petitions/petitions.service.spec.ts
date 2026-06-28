@@ -67,6 +67,13 @@ describe('PetitionsService', () => {
         content: 'Petition content',
         documentColor: '#1b1c1c',
         documentFont: 'Merriweather',
+        companyAddress: 'Rua da Empresa, 100',
+        courtDivision: '5a Vara do Trabalho de Fortaleza/CE',
+        dismissalType: 'semJustaCausa',
+        controversialPoints: 'Horas extras e verbas rescisorias',
+        caseValue: 'R$ 25.000,00',
+        requestFgtsWithdrawal: true,
+        requestFgtsFine: true,
       };
 
       const mockUser = {
@@ -91,6 +98,13 @@ describe('PetitionsService', () => {
           content: 'Petition content',
           font: 'Merriweather',
           textColor: '#1b1c1c',
+          companyAddress: 'Rua da Empresa, 100',
+          courtDivision: '5a Vara do Trabalho de Fortaleza/CE',
+          dismissalType: 'semJustaCausa',
+          controversialPoints: 'Horas extras e verbas rescisorias',
+          caseValue: 'R$ 25.000,00',
+          requestFgtsWithdrawal: true,
+          requestFgtsFine: true,
           userId: 'user1',
           status: PetitionStatus.ACTIVE,
         },

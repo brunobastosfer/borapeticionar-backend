@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsBoolean } from 'class-validator';
 import { PetitionStatus } from '@prisma/client';
 import { IsValidCnpj, IsValidCpfCnpj } from '../../common/validators';
 
@@ -58,8 +58,36 @@ export class UpdatePetitionDto {
 
   @IsOptional()
   @IsString()
+  companyAddress?: string;
+
+  @IsOptional()
+  @IsString()
   @IsValidCnpj()
   cnpj?: string;
+
+  @IsOptional()
+  @IsString()
+  courtDivision?: string;
+
+  @IsOptional()
+  @IsString()
+  dismissalType?: string;
+
+  @IsOptional()
+  @IsString()
+  controversialPoints?: string;
+
+  @IsOptional()
+  @IsString()
+  caseValue?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  requestFgtsWithdrawal?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  requestFgtsFine?: boolean;
 
   @IsOptional()
   @IsString()

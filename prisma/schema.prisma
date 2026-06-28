@@ -109,7 +109,14 @@ model Petition {
   cep              String?
   street           String?
   defendantCompany String?
+  companyAddress   String?
   cnpj             String?
+  courtDivision    String?
+  dismissalType    String?
+  controversialPoints    String?
+  caseValue              String?
+  requestFgtsWithdrawal Boolean @default(false)
+  requestFgtsFine        Boolean @default(false)
   facts            String?
   requests         String?
   status           PetitionStatus @default(DRAFT)
