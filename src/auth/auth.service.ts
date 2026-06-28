@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   Injectable,
   UnauthorizedException,
@@ -50,38 +49,11 @@ export class AuthService {
     userAgent: string,
     ipAddress?: string,
   ) {
-    const activeSession = await this.prisma.session.findFirst({
-      where: {
-        userId: user.id,
-        isActive: true,
-        expiresAt: { gt: new Date() },
-      },
-    });
+    await this.invalidateUserSessions(user.id);
+    const session = await this.createSession(user.id, userAgent, ipAddress);
 
-    if (activeSession) {
-      if (this.isSameDeviceSession(activeSession, userAgent, ipAddress)) {
-        await this.invalidateUserSessions(user.id);
-      } else {
-        throw new ConflictException(
-          'Voce ja esta logado em outra maquina. Faca logout antes de acessar de outro dispositivo.',
-        );
-      }
-    }
-
-    const payload = {
-      sub: user.id,
-      email: user.institutionalEmail,
-      role: user.role,
-    };
-
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET')!,
-      expiresIn: this.configService.get<string>('JWT_EXPIRATION_TIME')!,
-    } as any);
-
+    const accessToken = this.signAccessToken(user, session.id);
     const refreshToken = await this.generateRefreshToken(user.id);
-
-    await this.createSession(user.id, userAgent, ipAddress);
 
     return {
       accessToken,
@@ -121,17 +93,13 @@ export class AuthService {
       throw new UnauthorizedException('Usuario nao encontrado');
     }
 
-    const payload = {
-      sub: user.id,
-      email: user.institutionalEmail,
-      role: user.role,
-    };
+    const activeSession = await this.findActiveSessionForUser(user.id);
+    if (!activeSession) {
+      await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+      throw new ForbiddenException('Sessao expirada');
+    }
 
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET')!,
-      expiresIn: this.configService.get<string>('JWT_EXPIRATION_TIME')!,
-    } as any);
-
+    const accessToken = this.signAccessToken(user, activeSession.id);
     const refreshToken = await this.generateRefreshToken(user.id);
 
     return { accessToken, refreshToken };
@@ -254,6 +222,24 @@ export class AuthService {
     return token;
   }
 
+  private signAccessToken(
+    user: { id: string; institutionalEmail: string; role: string },
+    sessionId: string,
+  ) {
+    return this.jwtService.sign(
+      {
+        sub: user.id,
+        email: user.institutionalEmail,
+        role: user.role,
+        sid: sessionId,
+      },
+      {
+        secret: this.configService.get<string>('JWT_SECRET')!,
+        expiresIn: this.configService.get<string>('JWT_EXPIRATION_TIME')!,
+      } as any,
+    );
+  }
+
   private async createSession(
     userId: string,
     userAgent: string,
@@ -262,7 +248,7 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    await this.prisma.session.create({
+    return this.prisma.session.create({
       data: {
         userId,
         userAgent,
@@ -272,15 +258,15 @@ export class AuthService {
     });
   }
 
-  private isSameDeviceSession(
-    session: { userAgent?: string | null; ipAddress?: string | null },
-    userAgent: string,
-    ipAddress?: string,
-  ) {
-    return (
-      session.userAgent === userAgent &&
-      (session.ipAddress ?? null) === (ipAddress ?? null)
-    );
+  private async findActiveSessionForUser(userId: string) {
+    return this.prisma.session.findFirst({
+      where: {
+        userId,
+        isActive: true,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   private async invalidateUserSessions(userId: string) {

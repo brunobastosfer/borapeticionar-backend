@@ -4,7 +4,6 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -123,7 +122,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should throw ConflictException when user has active session on another device', async () => {
+    it('should replace active sessions and return tokens when user logs in from another device', async () => {
       const mockUser = {
         id: '1',
         institutionalEmail: 'test@test.com',
@@ -131,34 +130,6 @@ describe('AuthService', () => {
         hasSeenTutorial: false,
       };
 
-      mockPrisma.session.findFirst.mockResolvedValue({
-        id: 'session1',
-        userId: '1',
-        userAgent: 'Other browser',
-        ipAddress: '10.0.0.2',
-        isActive: true,
-      });
-
-      await expect(
-        service.login(mockUser, 'Mozilla/5.0', '127.0.0.1'),
-      ).rejects.toThrow(ConflictException);
-    });
-
-    it('should replace active session when login comes from the same device', async () => {
-      const mockUser = {
-        id: '1',
-        institutionalEmail: 'test@test.com',
-        role: 'USER',
-        hasSeenTutorial: false,
-      };
-
-      mockPrisma.session.findFirst.mockResolvedValue({
-        id: 'session1',
-        userId: '1',
-        userAgent: 'Mozilla/5.0',
-        ipAddress: '127.0.0.1',
-        isActive: true,
-      });
       mockJwtService.sign.mockReturnValue('accessToken');
       mockConfigService.get.mockReturnValue('secret');
       mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 1 });
@@ -166,7 +137,57 @@ describe('AuthService', () => {
       mockPrisma.refreshToken.create.mockResolvedValue({
         token: 'refreshToken',
       });
-      mockPrisma.session.create.mockResolvedValue({});
+      mockPrisma.session.create.mockResolvedValue({ id: 'session1' });
+
+      const result = await service.login(mockUser, 'Mozilla/5.0', '127.0.0.1');
+
+      expect(result.accessToken).toBe('accessToken');
+      expect(result.refreshToken).toBeDefined();
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: '1',
+          email: 'test@test.com',
+          role: 'USER',
+          sid: 'session1',
+        },
+        {
+          secret: 'secret',
+          expiresIn: 'secret',
+        },
+      );
+      expect(mockPrisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: { userId: '1' },
+      });
+      expect(mockPrisma.session.updateMany).toHaveBeenCalledWith({
+        where: { userId: '1', isActive: true },
+        data: { isActive: false },
+      });
+      expect(mockPrisma.session.create).toHaveBeenCalledWith({
+        data: {
+          userId: '1',
+          userAgent: 'Mozilla/5.0',
+          ipAddress: '127.0.0.1',
+          expiresAt: expect.any(Date),
+        },
+      });
+    });
+
+    it('should replace active sessions when login comes from the same device', async () => {
+      const mockUser = {
+        id: '1',
+        institutionalEmail: 'test@test.com',
+        role: 'USER',
+        hasSeenTutorial: false,
+      };
+
+      mockJwtService.sign.mockReturnValue('accessToken');
+      mockConfigService.get.mockReturnValue('secret');
+      mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 1 });
+      mockPrisma.session.updateMany.mockResolvedValue({ count: 1 });
+      mockPrisma.refreshToken.create.mockResolvedValue({
+        token: 'refreshToken',
+      });
+      mockPrisma.session.create.mockResolvedValue({ id: 'session1' });
 
       const result = await service.login(mockUser, 'Mozilla/5.0', '127.0.0.1');
 
@@ -189,19 +210,27 @@ describe('AuthService', () => {
         hasSeenTutorial: true,
       };
 
-      mockPrisma.session.findFirst.mockResolvedValue(null);
       mockJwtService.sign.mockReturnValue('accessToken');
       mockConfigService.get.mockReturnValue('secret');
+      mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 0 });
+      mockPrisma.session.updateMany.mockResolvedValue({ count: 0 });
       mockPrisma.refreshToken.create.mockResolvedValue({
         token: 'refreshToken',
       });
-      mockPrisma.session.create.mockResolvedValue({});
+      mockPrisma.session.create.mockResolvedValue({ id: 'session1' });
 
       const result = await service.login(mockUser, 'Mozilla/5.0', '127.0.0.1');
 
       expect(result.accessToken).toBe('accessToken');
       expect(result.refreshToken).toBeDefined();
       expect(result.user.hasSeenTutorial).toBe(true);
+      expect(mockPrisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: { userId: '1' },
+      });
+      expect(mockPrisma.session.updateMany).toHaveBeenCalledWith({
+        where: { userId: '1', isActive: true },
+        data: { isActive: false },
+      });
       expect(mockPrisma.session.create).toHaveBeenCalled();
     });
   });
@@ -397,6 +426,7 @@ describe('AuthService', () => {
         institutionalEmail: 'test@test.com',
         role: 'USER',
       });
+      mockPrisma.session.findFirst.mockResolvedValue({ id: 'session1' });
       mockJwtService.sign.mockReturnValue('newAccessToken');
       mockConfigService.get.mockReturnValue('secret');
       mockPrisma.refreshToken.create.mockResolvedValue({
@@ -407,6 +437,51 @@ describe('AuthService', () => {
 
       expect(result.accessToken).toBe('newAccessToken');
       expect(result.refreshToken).toBeDefined();
+      expect(mockPrisma.session.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: '1',
+          isActive: true,
+          expiresAt: { gt: expect.any(Date) },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: '1',
+          email: 'test@test.com',
+          role: 'USER',
+          sid: 'session1',
+        },
+        {
+          secret: 'secret',
+          expiresIn: 'secret',
+        },
+      );
+    });
+
+    it('should throw ForbiddenException and remove tokens when refresh token has no active session', async () => {
+      mockPrisma.refreshToken.findUnique.mockResolvedValue({
+        id: '1',
+        token: 'token',
+        userId: '1',
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60_000),
+      });
+      mockPrisma.refreshToken.delete.mockResolvedValue({});
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: '1',
+        institutionalEmail: 'test@test.com',
+        role: 'USER',
+      });
+      mockPrisma.session.findFirst.mockResolvedValue(null);
+      mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 1 });
+
+      await expect(service.refreshTokens('token')).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockPrisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: { userId: '1' },
+      });
+      expect(mockJwtService.sign).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
