@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { PetitionsService } from './petitions.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -146,6 +147,31 @@ describe('PetitionsService', () => {
       await expect(service.create('user1', dto)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+
+    it('should expose outdated petition schema errors without incrementing usage', async () => {
+      const dto = {
+        content: 'Petition content',
+        companyAddress: 'Rua da Empresa, 100',
+      };
+      const mockUser = {
+        id: 'user1',
+        plan: { monthlyLimit: 15, practiceAreas: ['trabalhista'] },
+      };
+      const prismaError = {
+        code: 'P2022',
+        message: 'Column `companyAddress` does not exist',
+      };
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.petitionUsage.findUnique.mockResolvedValue({ count: 0 });
+      mockPrisma.petition.create.mockRejectedValue(prismaError);
+
+      await expect(service.create('user1', dto)).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+      expect(mockPrisma.petitionUsage.update).not.toHaveBeenCalled();
+      expect(mockPrisma.petitionUsage.create).not.toHaveBeenCalled();
     });
   });
 

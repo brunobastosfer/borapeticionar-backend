@@ -3,12 +3,14 @@ import {
   ForbiddenException,
   NotFoundException,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePetitionDto } from './dto/create-petition.dto';
 import { ListPetitionsQueryDto } from './dto/list-petitions-query.dto';
 import { UpdatePetitionDto } from './dto/update-petition.dto';
 import { PetitionStatus } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { AuthMailerService } from '../auth/auth-mailer.service';
 
 type PetitionStyleAliases = {
@@ -35,12 +37,10 @@ export class PetitionsService {
     await this.checkPracticeArea(userId, dto.practiceArea);
     const data = this.normalizePetitionData(dto);
 
-    const petition = await this.prisma.petition.create({
-      data: {
-        ...data,
-        userId,
-        status: PetitionStatus.ACTIVE,
-      },
+    const petition = await this.createPetition({
+      ...data,
+      userId,
+      status: PetitionStatus.ACTIVE,
     });
 
     await this.incrementUsage(userId);
@@ -51,12 +51,10 @@ export class PetitionsService {
   async saveDraft(userId: string, dto: CreatePetitionDto) {
     const data = this.normalizePetitionData(dto);
 
-    return this.prisma.petition.create({
-      data: {
-        ...data,
-        userId,
-        status: PetitionStatus.DRAFT,
-      },
+    return this.createPetition({
+      ...data,
+      userId,
+      status: PetitionStatus.DRAFT,
     });
   }
 
@@ -136,10 +134,7 @@ export class PetitionsService {
 
   async update(id: string, userId: string, dto: UpdatePetitionDto) {
     await this.findOne(id, userId);
-    return this.prisma.petition.update({
-      where: { id },
-      data: this.normalizePetitionData(dto),
-    });
+    return this.updatePetition({ id }, this.normalizePetitionData(dto));
   }
 
   async archive(id: string, userId: string) {
@@ -376,6 +371,51 @@ export class PetitionsService {
     }
 
     return normalized;
+  }
+
+  private async createPetition(data: Prisma.PetitionUncheckedCreateInput) {
+    try {
+      return await this.prisma.petition.create({ data });
+    } catch (error) {
+      this.handlePetitionPersistenceError(error);
+    }
+  }
+
+  private async updatePetition(
+    where: Prisma.PetitionWhereUniqueInput,
+    data: Prisma.PetitionUncheckedUpdateInput,
+  ) {
+    try {
+      return await this.prisma.petition.update({ where, data });
+    } catch (error) {
+      this.handlePetitionPersistenceError(error);
+    }
+  }
+
+  private handlePetitionPersistenceError(error: unknown): never {
+    if (this.isOutdatedPetitionSchemaError(error)) {
+      throw new ServiceUnavailableException(
+        'Nao foi possivel salvar a peticao porque o banco de dados esta desatualizado para os novos campos do formulario. Execute as migrations e gere o Prisma Client antes de tentar novamente.',
+      );
+    }
+
+    throw error;
+  }
+
+  private isOutdatedPetitionSchemaError(error: unknown) {
+    const prismaError = error as {
+      code?: string;
+      message?: string;
+    };
+    const message = prismaError?.message || '';
+
+    if (prismaError?.code === 'P2022') {
+      return true;
+    }
+
+    return /unknown (arg|argument)|column .*does not exist|does not exist in the current database/i.test(
+      message,
+    );
   }
 
   private async checkPracticeArea(userId: string, practiceArea?: string) {
